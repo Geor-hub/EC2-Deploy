@@ -42,6 +42,10 @@ jobs:
           echo "EC2 Instance created with ID: $INSTANCE_ID"
           echo "::set-output name=instance_id::$INSTANCE_ID"
 
+    - name:
+      run: |
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.USER_SERVER }}@${{ env.ip }} 
+
     - name: Clean up
       run: |
           rm TestDevOps.pem
