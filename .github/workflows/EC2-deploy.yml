@@ -10,7 +10,7 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_REGION: ${{ secrets.AWS_REGION }}
-  
+    
 jobs:
   deploy-ec2:
     runs-on: ubuntu-latest
@@ -19,7 +19,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Save SSH private key
+      run: |
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > TestDevOps.pem
+        chmod 600 TestDevOps.pem
+        echo "SSH private key saved."
+
     - name: Create EC2 Instance
+      id: ec2
       run: |
         aws ec2 run-instances \
           --image-id ami-0fb6ffc8e310f461b \
@@ -28,4 +35,30 @@ jobs:
           --key-name TestDevOps \
           --security-group-ids sg-0e8bb9959030cb190 \
           --subnet-id subnet-00d0912f52be90b9c \
-          --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=GeoInstanciaGratuita}]"
+          --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=GeoInstanciaGratuita}]" \
+          --associate-public-ip-address \
+          --query 'Instances[0].InstanceId' \
+          --output text)
+          
+          echo "EC2 Instance created with ID: $INSTANCE_ID"
+          echo "::set-output name=instance_id::$INSTANCE_ID"
+
+    - name: Get Public IP Address
+      id: ip
+      run: |
+          PUBLIC_IP=$(aws ec2 describe-instances \
+            --instance-ids ${{ steps.ec2.outputs.instance_id }} \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          echo "Public IP Address: $PUBLIC_IP"
+          echo "::set-output name=public_ip::$PUBLIC_IP"
+
+    - name: Connect to EC2 Instance
+      run: |
+          ssh -o StrictHostKeyChecking=no -i TestDevOps.pem ec2-user@${{ steps.ip.outputs.public_ip }} "echo 'Connected to EC2 Instance'"
+          echo "Connected to EC2 Instance."
+
+    - name: Clean up
+      run: |
+          rm TestDevOps.pem
+          echo "Cleaned up SSH private key."
