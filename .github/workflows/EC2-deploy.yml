@@ -28,17 +28,16 @@ jobs:
     - name: Create EC2 Instance
       id: ec2
       run: |
-        aws ec2 run-instances \
-          --image-id ami-0fb6ffc8e310f461b \
-          --count 1 \
-          --instance-type t2.micro \
-          --key-name TestDevOps \
-          --security-group-ids sg-0e8bb9959030cb190 \
-          --subnet-id subnet-00d0912f52be90b9c \
-          --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=GeoInstanciaGratuita}]" \
-          --associate-public-ip-address \
-          --query 'Instances[0].InstanceId' \
-          --output text)
+        INSTANCE_ID=$(aws ec2 run-instances \
+            --image-id ami-0fb6ffc8e310f461b \
+            --count 1 \
+            --instance-type t2.micro \
+            --key-name TestDevOps \
+            --security-group-ids sg-0e8bb9959030cb190 \
+            --subnet-id subnet-00d0912f52be90b9c \
+            --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=GeoInstanciaGratuita}]" \
+            --associate-public-ip-address \
+            --output text)
           
           echo "EC2 Instance created with ID: $INSTANCE_ID"
           echo "::set-output name=instance_id::$INSTANCE_ID"
