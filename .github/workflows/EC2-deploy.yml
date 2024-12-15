@@ -19,9 +19,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Launch EC2 instance
+    - name: Create EC2 Instance
       run: |
-        INSTANCE_ID=$(aws ec2 run-instances \
+        aws ec2 run-instances \
           --image-id ami-0fb6ffc8e310f461b \
           --count 1 \
           --instance-type t2.micro \
@@ -29,6 +29,3 @@ jobs:
           --security-group-ids sg-0e8bb9959030cb190 \
           --subnet-id subnet-00d0912f52be90b9c \
           --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=GeoInstanciaGratuita}]"
-          --query 'Instances[0].InstanceId' \
-          --output text)
-        echo "EC2 Instance launched with ID: $INSTANCE_ID"
