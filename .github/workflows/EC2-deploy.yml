@@ -21,9 +21,9 @@ jobs:
 
     - name: Save SSH private key
       run: |
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > TestDevOps.pem
-        chmod 600 TestDevOps.pem
-        echo "SSH private key saved."
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
 
     - name: Add SSH key to the agent
       run: |
