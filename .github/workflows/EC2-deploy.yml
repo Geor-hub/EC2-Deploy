@@ -5,12 +5,11 @@ on:
     branches:
       - main
 
-# Definir variables de entorno a nivel de workflow
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_REGION: ${{ secrets.AWS_REGION }}
-    
+
 jobs:
   deploy-ec2:
     runs-on: ubuntu-latest
@@ -28,8 +27,7 @@ jobs:
     - name: Add SSH key to the agent
       run: |
         eval "$(ssh-agent -s)"
-        ssh-add TestDevOps.pem
-        echo "SSH private key added to the agent."
+        ssh-add ~/.ssh/id_rsa
 
     - name: Create EC2 Instance
       id: ec2
@@ -43,16 +41,25 @@ jobs:
             --subnet-id subnet-00d0912f52be90b9c \
             --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=GeoInstanciaGratuita}]" \
             --associate-public-ip-address \
+            --query "Instances[0].InstanceId" \
             --output text)
-          
-          echo "EC2 Instance created with ID: $INSTANCE_ID"
-          echo "::set-output name=instance_id::$INSTANCE_ID"
+
+        echo "EC2 Instance created with ID: $INSTANCE_ID"
+
+        PUBLIC_IP=$(aws ec2 describe-instances \
+            --instance-ids $INSTANCE_ID \
+            --query "Reservations[0].Instances[0].PublicIpAddress" \
+            --output text)
+
+        echo "Public IP of EC2 instance: $PUBLIC_IP"
+        echo "::set-output name=instance_id::$INSTANCE_ID"
+        echo "::set-output name=public_ip::$PUBLIC_IP"
 
     - name: Ssh connection
       run: |
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.USER_SERVER }}@${{ env.ip }} 
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.USER_SERVER }}@${{ steps.ec2.outputs.public_ip }}
 
     - name: Clean up
       run: |
-          rm TestDevOps.pem
+          rm ~/.ssh/id_rsa
           echo "Cleaned up SSH private key."
